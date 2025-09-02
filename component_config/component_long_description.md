@@ -1,0 +1,1 @@
+InfluxDB 2 Extractor long description
