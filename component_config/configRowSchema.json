@@ -1,1 +1,127 @@
-{}
+{
+  "type": "object",
+  "title": "Component configuration",
+  "required": [
+    "destination",
+    "source",
+    "debug"
+  ],
+  "properties": {
+    "source": {
+      "type": "object",
+      "title": "Data Source",
+      "properties": {
+        "bucket": {
+          "title": "Bucket",
+          "type": "string",
+          "format": "select",
+          "enum": [],
+          "options": {
+            "async": {
+              "label": "Load buckets",
+              "action": "list_buckets"
+            }
+          },
+          "propertyOrder": 1
+        },
+        "query": {
+          "title": "Query",
+          "type": "string",
+          "propertyOrder": 1
+        },
+        "start_timestamp": {
+          "title": "Query",
+          "type": "string",
+          "propertyOrder": 1,
+          "default": "last_run"
+        },
+        "batch_size": {
+          "type": "integer",
+          "title": "Batch size",
+          "default": 10000,
+          "propertyOrder": 2,
+          "description": "By default, the extractor will load data in batches of 25 000 rows. You can adjust this value to optimize the performance (or solve OOM) of the writer.",
+          "options": {
+            "dependencies": {
+              "helper_access_method": "direct_storage"
+            }
+          }
+        }
+      },
+      "propertyOrder": 1
+    },
+    "destination": {
+      "type": "object",
+      "title": "Data Destination",
+      "properties": {
+        "bucket": {
+          "title": "Bucket",
+          "type": "string",
+          "format": "select",
+          "enum": [],
+          "options": {
+            "async": {
+              "label": "Load buckets",
+              "action": "list_buckets"
+            }
+          },
+          "propertyOrder": 1
+        },
+        "table_name": {
+          "title": "Table name",
+          "type": "string",
+          "description": "If empty, the data will be written to a table named after the source bucket.",
+          "propertyOrder": 1
+        },
+        "start_timestamp": {
+          "title": "Query",
+          "type": "string",
+          "propertyOrder": 1,
+          "default": "last_run"
+        },
+        "preserve_insertion_order": {
+          "type": "boolean",
+          "title": "Preserve insertion order",
+          "format": "checkbox",
+          "default": true,
+          "description": "If enabled, the writer will preserve the order of the rows in the destination table, when encountering OOM error, disabling this option may help",
+          "propertyOrder": 3,
+          "options": {
+            "dependencies": {
+              "helper_access_method": "direct_storage"
+            }
+          }
+        },
+        "load_type": {
+          "enum": [
+            "incremental_load",
+            "full_load"
+          ],
+          "type": "string",
+          "title": "Load Type",
+          "default": "incremental_load",
+          "options": {
+            "enum_titles": [
+              "Incremental Load",
+              "Full Load"
+            ],
+            "dependencies": {
+              "parquet_output": false
+            }
+          },
+          "description": "If Full load is used, the destination table will be overwritten every run. If Incremental Load is used, data will be upserted into the destination table based on the primary key. Append modes do not contain any primary keys and are not deduplicated.",
+          "propertyOrder": 42
+        }
+      },
+      "propertyOrder": 1
+    },
+    "debug": {
+      "type": "boolean",
+      "title": "Debug mode",
+      "format": "checkbox",
+      "default": false,
+      "description": "If enabled, the component will produce detailed logs",
+      "propertyOrder": 4
+    }
+  }
+}

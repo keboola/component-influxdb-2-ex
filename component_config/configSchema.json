@@ -5,15 +5,22 @@
     "print_hello"
   ],
   "properties": {
-    "print_hello": {
-      "type": "boolean",
-      "title": "Print Hello",
+    "url": {
+      "type": "string",
+      "title": "URL",
+      "description": "The URL of the InfluxDB incl. port for example https://db.test.com:8086",
       "propertyOrder": 1
     },
-    "debug": {
-      "type": "boolean",
-      "title": "Debug",
+    "#token": {
+      "type": "string",
+      "title": "Token",
+      "format": "password",
       "propertyOrder": 2
+    },
+    "org": {
+      "type": "string",
+      "title": "Organization",
+      "propertyOrder": 3
     }
   }
 }

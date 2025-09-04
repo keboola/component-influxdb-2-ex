@@ -1,26 +1,29 @@
-import logging
+from enum import Enum
+from pydantic import BaseModel, Field
 
-from keboola.component.exceptions import UserException
-from pydantic import BaseModel, Field, ValidationError, field_validator
+
+class LoadType(str, Enum):
+    full_load = "full_load"
+    incremental_load = "incremental_load"
+
+
+class Source(BaseModel):
+    bucket: str = ""
+    query: str = ""
+    start_timestamp: str = ""
+    batch_size: int = 10_000
+
+
+class Destination(BaseModel):
+    preserve_insertion_order: bool = True
+    table_name: str = ""
+    load_type: LoadType = Field(default=LoadType.incremental_load)
 
 
 class Configuration(BaseModel):
-    print_hello: bool
-    api_token: str = Field(alias="#api_token")
+    url: str = ""
+    token: str = Field(alias="#token")
+    org: str = ""
+    source: Source
+    destination: Destination
     debug: bool = False
-
-    def __init__(self, **data):
-        try:
-            super().__init__(**data)
-        except ValidationError as e:
-            error_messages = [f"{err['loc'][0]}: {err['msg']}" for err in e.errors()]
-            raise UserException(f"Validation Error: {', '.join(error_messages)}")
-
-        if self.debug:
-            logging.debug("Component will run in Debug mode")
-
-    @field_validator("api_token")
-    def token_must_be_uppercase(cls, v):
-        if not v.isupper():
-            raise UserException("API token must be uppercase")
-        return v
