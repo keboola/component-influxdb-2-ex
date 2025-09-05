@@ -27,25 +27,27 @@
         "query": {
           "title": "Query",
           "type": "string",
-          "propertyOrder": 1
+          "format": "textarea",
+          "default": "from(bucket: \"{bucket}\")\n|> range(start: {start})\n|> limit(n: {batch_size}, offset: {offset})",
+          "description": "Flux query for extracting data from InfluxDB with placeholders: {bucket}, {start}, {batch_size}, {offset}.",
+          "options": {
+            "input_height": "100px"
+          },
+          "propertyOrder": 2
         },
-        "start_timestamp": {
-          "title": "Query",
+        "start": {
+          "title": "Start Time",
           "type": "string",
-          "propertyOrder": 1,
+          "description": "Absolute or relative value in <a href=\"https://docs.influxdata.com/flux/v0/stdlib/universe/range/#start\">supported formats by FluxQL</a> for example: -1h, 2020-05-10T21:00:00Z, 1567029600 or 'last_run' to use the time of the last successful run.",
+          "propertyOrder": 3,
           "default": "last_run"
         },
         "batch_size": {
           "type": "integer",
           "title": "Batch size",
           "default": 10000,
-          "propertyOrder": 2,
-          "description": "By default, the extractor will load data in batches of 25 000 rows. You can adjust this value to optimize the performance (or solve OOM) of the writer.",
-          "options": {
-            "dependencies": {
-              "helper_access_method": "direct_storage"
-            }
-          }
+          "propertyOrder": 4,
+          "description": "By default, the extractor will load data in batches of 10 000 rows. You can adjust this value to optimize the performance (or solve OOM) of the writer."
         }
       },
       "propertyOrder": 1
@@ -54,30 +56,11 @@
       "type": "object",
       "title": "Data Destination",
       "properties": {
-        "bucket": {
-          "title": "Bucket",
-          "type": "string",
-          "format": "select",
-          "enum": [],
-          "options": {
-            "async": {
-              "label": "Load buckets",
-              "action": "list_buckets"
-            }
-          },
-          "propertyOrder": 1
-        },
         "table_name": {
           "title": "Table name",
           "type": "string",
-          "description": "If empty, the data will be written to a table named after the source bucket.",
+          "description": "Can be defined only when using a single output table. If not set, the table name will be generated.",
           "propertyOrder": 1
-        },
-        "start_timestamp": {
-          "title": "Query",
-          "type": "string",
-          "propertyOrder": 1,
-          "default": "last_run"
         },
         "preserve_insertion_order": {
           "type": "boolean",
@@ -85,7 +68,7 @@
           "format": "checkbox",
           "default": true,
           "description": "If enabled, the writer will preserve the order of the rows in the destination table, when encountering OOM error, disabling this option may help",
-          "propertyOrder": 3,
+          "propertyOrder": 2,
           "options": {
             "dependencies": {
               "helper_access_method": "direct_storage"
@@ -110,10 +93,10 @@
             }
           },
           "description": "If Full load is used, the destination table will be overwritten every run. If Incremental Load is used, data will be upserted into the destination table based on the primary key. Append modes do not contain any primary keys and are not deduplicated.",
-          "propertyOrder": 42
+          "propertyOrder": 3
         }
       },
-      "propertyOrder": 1
+      "propertyOrder": 2
     },
     "debug": {
       "type": "boolean",
@@ -121,7 +104,7 @@
       "format": "checkbox",
       "default": false,
       "description": "If enabled, the component will produce detailed logs",
-      "propertyOrder": 4
+      "propertyOrder": 3
     }
   }
 }

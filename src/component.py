@@ -47,10 +47,10 @@ class Component(ComponentBase):
         return conn
 
     def download_data_to_tmp_tables(self):
-        start_timestamp = (
-            self.get_state_file().get("last_run")
-            if self.params.source.start_timestamp == "last_run"
-            else self.params.source.start_timestamp
+        start = (
+            self.get_state_file().get("last_run", 0)
+            if self.params.source.start == "last_run"
+            else self.params.source.start
         )
 
         offset = 0
@@ -58,7 +58,7 @@ class Component(ComponentBase):
             res_tables = self._influxdb.query_api().query_data_frame(
                 self.params.source.query.format(
                     bucket=self.params.source.bucket,
-                    start_timestamp=start_timestamp,
+                    start=start,
                     batch_size=self.params.source.batch_size,
                     offset=offset,
                 )
