@@ -73,7 +73,7 @@ class Component(ComponentBase):
         out_table = self.create_out_table_definition(
             f"{self.params.destination.table_name or self.params.source.bucket}.csv",
             schema=schema,
-            primary_key=self.params.destination.primary_key,
+            # primary_key=self.params.destination.primary_key,
             incremental=self.params.destination.incremental,
             has_header=True,
         )

@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 
 class LoadType(str, Enum):
@@ -18,6 +18,11 @@ class Destination(BaseModel):
     preserve_insertion_order: bool = True
     table_name: str = ""
     load_type: LoadType = Field(default=LoadType.incremental_load)
+
+    @computed_field
+    @property
+    def incremental(self) -> bool:
+        return self.load_type == LoadType.incremental_load
 
 
 class Configuration(BaseModel):
