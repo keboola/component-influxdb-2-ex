@@ -1,11 +1,14 @@
+import logging
 import os
 import time
-import logging
-import influxdb_client
-import duckdb
 from collections import OrderedDict
+import hashlib
+
+import duckdb
+import influxdb_client
+import pandas as pd
 from keboola.component.base import ComponentBase, sync_action
-from keboola.component.dao import SupportedDataTypes, BaseType, ColumnDefinition
+from keboola.component.dao import BaseType, ColumnDefinition, SupportedDataTypes
 from keboola.component.exceptions import UserException
 from keboola.component.sync_actions import SelectElement
 
@@ -24,9 +27,9 @@ class Component(ComponentBase):
     def run(self):
         start_time = int(time.time())
 
-        self.download_data_to_tmp_table()
+        self.download_data_to_tmp_tables()
 
-        self.write_table()
+        self.write_tables()
 
         self.write_state_file({"last_run": start_time})
 
@@ -43,7 +46,7 @@ class Component(ComponentBase):
 
         return conn
 
-    def download_data_to_tmp_table(self):
+    def download_data_to_tmp_tables(self):
         start_timestamp = (
             self.get_state_file().get("last_run")
             if self.params.source.start_timestamp == "last_run"
@@ -52,38 +55,65 @@ class Component(ComponentBase):
 
         offset = 0
         while True:
-            current_table = self._influxdb.query_api().query_data_frame(f"""
-            from(bucket: "{self.params.source.bucket}")
-            |> range(start: {start_timestamp})
-            |> limit(n: {self.params.source.batch_size}, offset: {offset})
-            """)
-            offset += self.params.source.batch_size
-            if current_table.empty:
+            res_tables = self._influxdb.query_api().query_data_frame(
+                self.params.source.query.format(
+                    bucket=self.params.source.bucket,
+                    start_timestamp=start_timestamp,
+                    batch_size=self.params.source.batch_size,
+                    offset=offset,
+                )
+            )
+
+            if isinstance(res_tables, pd.DataFrame) and res_tables.empty:
                 return
-            self._duckdb.sql("CREATE TABLE IF NOT EXISTS stage_table AS FROM current_table WITH NO DATA;")
-            self._duckdb.sql("INSERT INTO stage_table SELECT * FROM current_table;")
-            logging.critical(self._duckdb.sql("SELECT count(*) from stage_table").fetchall()[0][0])
 
-    def write_table(self):
-        table_meta = self._duckdb.execute("DESCRIBE stage_table;").fetchall()
-        schema = OrderedDict(
-            {c[0]: ColumnDefinition(data_types=BaseType(dtype=self.convert_dtypes(c[1]))) for c in table_meta}
-        )
+            if not isinstance(res_tables, list):
+                res_tables = [res_tables]
 
-        out_table = self.create_out_table_definition(
-            f"{self.params.destination.table_name or self.params.source.bucket}.csv",
-            schema=schema,
-            # primary_key=self.params.destination.primary_key,
-            incremental=self.params.destination.incremental,
-            has_header=True,
-        )
+            offset += self.params.source.batch_size
 
-        try:
-            self._duckdb.execute(f"COPY stage_table TO '{out_table.full_path}' (HEADER, DELIMITER ',', FORCE_QUOTE *)")
-        except duckdb.ConversionException as e:
-            raise UserException(f"Error during query execution: {e}") from e
+            for current_table in res_tables:
+                col_names = current_table.columns.tolist()
+                tags_fields_names = [
+                    col for col in col_names if not col.startswith("_") and col not in {"result", "table"}
+                ]
+                table_name = "_".join(tags_fields_names) if tags_fields_names else "out_table"
 
-        self.write_manifest(out_table)
+                select_clause = "SELECT * EXCLUDE('result','table','_start','_stop')"
+
+                self._duckdb.sql(
+                    f'CREATE TABLE IF NOT EXISTS "{table_name}" AS {select_clause} FROM current_table WITH NO DATA;'
+                )
+                self._duckdb.sql(f'INSERT INTO "{table_name}" {select_clause} FROM current_table;')
+
+    def write_tables(self):
+        for current_table in self._duckdb.execute("SHOW TABLES;").fetchall():
+            current_table_name = current_table[0]
+
+            no_rows = self._duckdb.execute(f'SELECT COUNT (*) FROM "{current_table_name}";').fetchall()[0][0]
+            logging.info(f"Writing {no_rows} rows, to the output table {current_table_name}")
+
+            table_meta = self._duckdb.execute(f'DESCRIBE "{current_table_name}";').fetchall()
+            schema = OrderedDict(
+                {c[0]: ColumnDefinition(data_types=BaseType(dtype=self.convert_dtypes(c[1]))) for c in table_meta}
+            )
+
+            out_table = self.create_out_table_definition(
+                f"{hashlib.md5(current_table_name.encode()).hexdigest()}.csv",
+                schema=schema,
+                primary_key=self.params.destination.primary_key,
+                incremental=self.params.destination.incremental,
+                has_header=True,
+            )
+
+            try:
+                self._duckdb.execute(
+                    f"COPY \"{current_table_name}\" TO '{out_table.full_path}' (HEADER, DELIMITER ',', FORCE_QUOTE *)"
+                )
+            except duckdb.ConversionException as e:
+                raise UserException(f"Error during query execution: {e}") from e
+
+            self.write_manifest(out_table)
 
     def convert_dtypes(self, dtype: str) -> SupportedDataTypes:
         if dtype in [

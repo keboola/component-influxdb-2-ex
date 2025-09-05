@@ -9,7 +9,7 @@ class LoadType(str, Enum):
 
 class Source(BaseModel):
     bucket: str = ""
-    query: str = ""
+    query: str = 'from(bucket: "{bucket}")|> range(start: {start_timestamp})|> limit(n: {batch_size}, offset: {offset})'
     start_timestamp: str = ""
     batch_size: int = 10_000
 
@@ -18,6 +18,7 @@ class Destination(BaseModel):
     preserve_insertion_order: bool = True
     table_name: str = ""
     load_type: LoadType = Field(default=LoadType.incremental_load)
+    primary_key: list[str] = []
 
     @computed_field
     @property
