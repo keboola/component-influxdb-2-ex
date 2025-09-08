@@ -23,6 +23,7 @@ class Component(ComponentBase):
         self.params = Configuration(**self.configuration.parameters)
         self._influxdb = self.init_influxdb()
         self._duckdb = self.init_duckdb()
+        self.pks = {}
 
     def run(self):
         start_time = int(time.time())
@@ -74,10 +75,10 @@ class Component(ComponentBase):
 
             for current_table in res_tables:
                 col_names = current_table.columns.tolist()
-                tags_fields_names = [
-                    col for col in col_names if not col.startswith("_") and col not in {"result", "table"}
-                ]
-                table_name = "_".join(tags_fields_names) if tags_fields_names else "out_table"
+                pks = [c for c in col_names if c not in ["result", "table", "_start", "_stop", "_value", "_field"]]
+                table_name = "_".join(pks) if pks else "out_table"
+
+                self.pks[table_name] = pks
 
                 select_clause = "SELECT * EXCLUDE('result','table','_start','_stop')"
 
@@ -98,10 +99,12 @@ class Component(ComponentBase):
                 {c[0]: ColumnDefinition(data_types=BaseType(dtype=self.convert_dtypes(c[1]))) for c in table_meta}
             )
 
+            pks = self.pks.get(current_table_name, [])
+
             out_table = self.create_out_table_definition(
                 f"{hashlib.md5(current_table_name.encode()).hexdigest()}.csv",
                 schema=schema,
-                primary_key=self.params.destination.primary_key,
+                primary_key=["_time"] + pks,
                 incremental=self.params.destination.incremental,
                 has_header=True,
             )
