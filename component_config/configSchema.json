@@ -1,9 +1,7 @@
 {
   "type": "object",
   "title": "extractor configuration",
-  "required": [
-    "print_hello"
-  ],
+  "required": [],
   "properties": {
     "url": {
       "type": "string",

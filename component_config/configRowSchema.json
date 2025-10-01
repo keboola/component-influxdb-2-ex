@@ -56,11 +56,24 @@
       "type": "object",
       "title": "Data Destination",
       "properties": {
-        "table_name": {
-          "title": "Table name",
-          "type": "string",
-          "description": "Can be defined only when using a single output table. If not set, the table name will be generated.",
+        "name_tables_by_tag_value": {
+          "type": "boolean",
+          "title": "Preserve insertion order",
+          "format": "checkbox",
+          "default": false,
+          "description": "If enabled, the writer will create a separate table for each value of the specified tags.",
           "propertyOrder": 1
+        },
+        "table_name": {
+          "title": "Table Name",
+          "type": "string",
+          "description": "Name of the destination table. Please ensure that the query returns exactly one table.",
+          "propertyOrder": 3,
+          "options": {
+            "dependencies": {
+              "name_tables_by_tag_value": false
+            }
+          }
         },
         "preserve_insertion_order": {
           "type": "boolean",
@@ -68,7 +81,7 @@
           "format": "checkbox",
           "default": true,
           "description": "If enabled, the writer will preserve the order of the rows in the destination table, when encountering OOM error, disabling this option may help",
-          "propertyOrder": 2,
+          "propertyOrder": 3,
           "options": {
             "dependencies": {
               "helper_access_method": "direct_storage"
@@ -93,7 +106,7 @@
             }
           },
           "description": "If Full load is used, the destination table will be overwritten every run. If Incremental Load is used, data will be upserted into the destination table based on the primary key. Append modes do not contain any primary keys and are not deduplicated.",
-          "propertyOrder": 3
+          "propertyOrder": 4
         }
       },
       "propertyOrder": 2

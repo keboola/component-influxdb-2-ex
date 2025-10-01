@@ -16,6 +16,8 @@ from configuration import Configuration
 
 DUCK_DB_DIR = os.path.join(os.environ.get("TMPDIR", "/tmp"), "duckdb")
 
+HELPER_QUERY = 'from(bucket: "{bucket}")|> range(start: 0)|> limit(n: 0)'
+
 
 class Component(ComponentBase):
     def __init__(self):
@@ -27,11 +29,8 @@ class Component(ComponentBase):
 
     def run(self):
         start_time = int(time.time())
-
         self.download_data_to_tmp_tables()
-
-        self.write_tables()
-
+        self.export_db_tables()
         self.write_state_file({"last_run": start_time})
 
     def init_influxdb(self) -> influxdb_client.InfluxDBClient:
@@ -54,6 +53,10 @@ class Component(ComponentBase):
             else self.params.source.start
         )
 
+        tag_names = set()
+        if self.params.destination.name_tables_by_tag_value:
+            tag_names = self.get_tag_names()
+
         offset = 0
         while True:
             res_tables = self._influxdb.query_api().query_data_frame(
@@ -74,20 +77,39 @@ class Component(ComponentBase):
             offset += self.params.source.batch_size
 
             for current_table in res_tables:
-                col_names = current_table.columns.tolist()
-                pks = [c for c in col_names if c not in ["result", "table", "_start", "_stop", "_value", "_field"]]
-                table_name = "_".join(pks) if pks else "out_table"
+                self.write_data_frame_to_db(current_table, tag_names)
 
-                self.pks[table_name] = pks
+    def write_data_frame_to_db(self, current_table, tag_names):
+        col_names = current_table.columns.tolist()
+        pks = [c for c in col_names if c not in ["result", "table", "_start", "_stop", "_value", "_field"]]
+        if tag_names:
+            tags_values = current_table.loc[0, list(tag_names)].tolist()
+            table_name = "_".join(tags_values)
+            self.pks[table_name] = tags_values
 
-                select_clause = "SELECT * EXCLUDE('result','table','_start','_stop')"
+        else:
+            table_name = "_".join(pks) if pks else "out_table"
+            table_name = hashlib.md5(table_name.encode()).hexdigest()
 
-                self._duckdb.sql(
-                    f'CREATE TABLE IF NOT EXISTS "{table_name}" AS {select_clause} FROM current_table WITH NO DATA;'
-                )
-                self._duckdb.sql(f'INSERT INTO "{table_name}" {select_clause} FROM current_table;')
+        self.pks[table_name] = pks
+        select_clause = "SELECT * EXCLUDE('result','table','_start','_stop')"
+        self._duckdb.sql(
+            f'CREATE TABLE IF NOT EXISTS "{table_name}" AS {select_clause} FROM current_table WITH NO DATA;'
+        )
+        self._duckdb.sql(f'INSERT INTO "{table_name}" {select_clause} FROM current_table;')
 
-    def write_tables(self):
+    def get_tag_names(self) -> set[str]:
+        """
+        run helper query and filter tag columns
+        """
+        res_helper = self._influxdb.query_api().query_data_frame(HELPER_QUERY.format(bucket=self.params.source.bucket))
+        all_columns = set().union(*[df.columns for df in res_helper])
+        tag_names = {col for col in all_columns if not col.startswith("_") and col not in {"result", "table"}}
+        if not tag_names:
+            raise UserException("No tag columns found in the source bucket, cannot name tables by tag value.")
+        return tag_names
+
+    def export_db_tables(self):
         for current_table in self._duckdb.execute("SHOW TABLES;").fetchall():
             current_table_name = current_table[0]
 
@@ -102,7 +124,7 @@ class Component(ComponentBase):
             pks = self.pks.get(current_table_name, [])
 
             out_table = self.create_out_table_definition(
-                f"{hashlib.md5(current_table_name.encode()).hexdigest()}.csv",
+                f"{current_table_name}.csv",
                 schema=schema,
                 primary_key=["_time"] + pks,
                 incremental=self.params.destination.incremental,
@@ -110,9 +132,8 @@ class Component(ComponentBase):
             )
 
             try:
-                self._duckdb.execute(
-                    f"COPY \"{current_table_name}\" TO '{out_table.full_path}' (HEADER, DELIMITER ',', FORCE_QUOTE *)"
-                )
+                q = f"COPY '{current_table_name}' TO '{out_table.full_path}' (HEADER, DELIMITER ',', FORCE_QUOTE *)"
+                self._duckdb.execute(q)
             except duckdb.ConversionException as e:
                 raise UserException(f"Error during query execution: {e}") from e
 

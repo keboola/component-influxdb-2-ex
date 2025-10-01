@@ -3,46 +3,21 @@ InfluxDB 2 Extractor
 
 Description
 
-**Table of Contents:**
+The component extracts data from InfluxDB v2 using the official Python client library.
 
-[TOC]
-
-Functionality Notes
-===================
-
-Prerequisites
-=============
-
-Ensure you have the necessary API token, register the application, etc.
-
-Features
-========
-
-| **Feature**             | **Description**                               |
-|-------------------------|-----------------------------------------------|
-| Generic UI Form         | Dynamic UI form for easy configuration.       |
-| Row-Based Configuration | Allows structuring the configuration in rows. |
-| OAuth                   | OAuth authentication enabled.                 |
-| Incremental Loading     | Fetch data in new increments.                 |
-| Backfill Mode           | Supports seamless backfill setup.             |
-| Date Range Filter       | Specify the date range for data retrieval.    |
-
-Supported Endpoints
-===================
-
-If you need additional endpoints, please submit your request to
-[ideas.keboola.com](https://ideas.keboola.com/).
 
 Configuration
 =============
 
-Param 1
--------
-Details about parameter 1.
+At the configuration level, you need to provide:
+URL, Token and Organization parameters.
 
-Param 2
--------
-Details about parameter 2.
+At the configuration row level, you need to provide:
+- Bucket
+- Query
+- Start Tame
+- Batch Size
+- Table Name (only when query is returning one table)
 
 Output
 ======
