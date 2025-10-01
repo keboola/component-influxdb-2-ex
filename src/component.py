@@ -38,7 +38,12 @@ class Component(ComponentBase):
 
     def init_duckdb(self) -> duckdb.DuckDBPyConnection:
         os.makedirs(DUCK_DB_DIR, exist_ok=True)
-        config = {"temp_directory": DUCK_DB_DIR, "extension_directory": os.path.join(DUCK_DB_DIR, "extensions")}
+        config = {
+            "temp_directory": DUCK_DB_DIR,
+            "extension_directory": os.path.join(DUCK_DB_DIR, "extensions"),
+            "threads": 1,
+            "max_memory": f"{self.params.duckdb_max_memory_mb}MB",
+        }
         conn = duckdb.connect(config=config)
 
         if not self.params.destination.preserve_insertion_order:

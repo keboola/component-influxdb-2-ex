@@ -58,7 +58,7 @@
       "properties": {
         "name_tables_by_tag_value": {
           "type": "boolean",
-          "title": "Preserve insertion order",
+          "title": "Name tables by tags values",
           "format": "checkbox",
           "default": false,
           "description": "If enabled, the writer will create a separate table for each value of the specified tags.",

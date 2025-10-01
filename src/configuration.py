@@ -34,3 +34,4 @@ class Configuration(BaseModel):
     source: Source
     destination: Destination
     debug: bool = False
+    duckdb_max_memory_mb: int = 128
