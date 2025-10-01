@@ -96,7 +96,7 @@ class Component(ComponentBase):
         self._duckdb.sql(
             f'CREATE TABLE IF NOT EXISTS "{table_name}" AS {select_clause} FROM current_table WITH NO DATA;'
         )
-        self._duckdb.sql(f'INSERT INTO "{table_name}" {select_clause} FROM current_table;')
+        self._duckdb.sql(f'INSERT INTO "{table_name}" BY NAME {select_clause} FROM current_table;')
 
     def get_tag_names(self) -> set[str]:
         """
