@@ -112,10 +112,14 @@ class Component(ComponentBase):
         if available_tag_names and self.params.destination.name_tables_by_tag_value:
             tags_values = current_table.loc[0, available_tag_names].tolist()
             table_name = "_".join(str(v) for v in tags_values)
-
         else:
-            # TODO use first xx from colnames
-            table_name = hashlib.md5(("_".join(pks) if pks else "out_table").encode()).hexdigest()
+            table_name = ("_".join([pk for pk in pks if pk not in ["_time", "_measurement"]]) if pks else "out_table")
+
+        # Truncate and hash table names longer than 64 characters
+        if len(table_name) > 64:
+            name_hash = hashlib.md5(table_name.encode()).hexdigest()[:16]
+            table_name = f"{table_name[:40]}__{name_hash}"
+        
         self.primary_keys[table_name] = available_tag_names
         if "_measurement" in col_names:
             self.primary_keys[table_name].append("_measurement")
