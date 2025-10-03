@@ -1,18 +1,22 @@
+import hashlib
 import logging
 import os
 import time
+import warnings
 from collections import OrderedDict
-import hashlib
 
 import duckdb
 import influxdb_client
 import pandas as pd
+from influxdb_client.client.warnings import MissingPivotFunction
 from keboola.component.base import ComponentBase, sync_action
 from keboola.component.dao import BaseType, ColumnDefinition, SupportedDataTypes
 from keboola.component.exceptions import UserException
 from keboola.component.sync_actions import SelectElement
 
 from configuration import Configuration
+
+warnings.simplefilter("ignore", MissingPivotFunction)
 
 DUCK_DB_DIR = os.path.join(os.environ.get("TMPDIR", "/tmp"), "duckdb")
 
