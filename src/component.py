@@ -113,13 +113,13 @@ class Component(ComponentBase):
             tags_values = current_table.loc[0, available_tag_names].tolist()
             table_name = "_".join(str(v) for v in tags_values)
         else:
-            table_name = ("_".join([pk for pk in pks if pk not in ["_time", "_measurement"]]) if pks else "out_table")
+            table_name = "_".join([pk for pk in pks if pk not in ["_time", "_measurement"]]) if pks else "out_table"
 
         # Truncate and hash table names longer than 64 characters
         if len(table_name) > 64:
             name_hash = hashlib.md5(table_name.encode()).hexdigest()[:16]
             table_name = f"{table_name[:40]}__{name_hash}"
-        
+
         self.primary_keys[table_name] = available_tag_names
         if "_measurement" in col_names:
             self.primary_keys[table_name].append("_measurement")
@@ -132,7 +132,10 @@ class Component(ComponentBase):
         res_helper = self._influxdb.query_api().query_data_frame(
             'from(bucket: "{bucket}")|> range(start: 0)|> limit(n: 0)'.format(bucket=self.params.source.bucket)
         )
+        if not isinstance(res_helper, list):
+            res_helper = [res_helper]
         all_columns = set().union(*[df.columns for df in res_helper])
+        logging.error(f"res: {all_columns}")
         tag_names = {col for col in all_columns if not col.startswith("_") and col not in {"result", "table"}}
         if self.params.destination.name_tables_by_tag_value and not tag_names:
             raise UserException("No tag columns found in the source bucket, cannot name tables by tag value.")
@@ -141,7 +144,7 @@ class Component(ComponentBase):
     def export_db_tables(self):
         tables = self._duckdb.execute("SHOW TABLES;").fetchall()
 
-        if len(tables) != 1 and self.params.destination.table_name :
+        if len(tables) != 1 and self.params.destination.table_name:
             raise UserException("Parameter 'table_name' can be used only if the query returns single table.")
 
         for current_table in tables:
@@ -238,7 +241,7 @@ class Component(ComponentBase):
         buckets_iter = buckets_api.find_buckets_iter()
         res = [SelectElement(b.name) for b in buckets_iter if b.type == "user"]
         if not res:
-            res = [SelectElement("Unable to list buckets.")]
+            raise UserException("Unable to list buckets.")
         return res
 
     @sync_action("list_organizations")
@@ -247,7 +250,7 @@ class Component(ComponentBase):
         orgs = organizations_api.find_organizations()
         res = [SelectElement(o.name) for o in orgs]
         if not res:
-            res = [SelectElement("Unable to list organizations.")]
+            raise UserException("Unable to list organizations.")
         return res
 
 
