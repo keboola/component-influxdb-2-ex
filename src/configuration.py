@@ -28,7 +28,7 @@ class Destination(BaseModel):
 
 
 class Configuration(BaseModel):
-    url: str = ""
+    url: str
     token: str = Field(alias="#token")
     org: str = ""
     source: Source

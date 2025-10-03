@@ -28,12 +28,14 @@ class Component(ComponentBase):
         self._influxdb = self.init_influxdb()
         self._duckdb = self.init_duckdb()
         self.primary_keys = {}
-        state = self.get_state_file() or {}
-        self.columns_cache = state.get("columns_cache") or {}
-        self.last_run = state.get("last_run", 0)
+        self.columns_cache = {}
+        self.last_run = 0
 
     def run(self):
         start_time = int(time.time())
+        state = self.get_state_file() or {}
+        self.columns_cache = state.get("columns_cache") or {}
+        self.last_run = state.get("last_run", 0)
         self.download_data_to_tmp_tables()
         self.export_db_tables()
         self.write_state_file({"last_run": start_time, "columns_cache": self.columns_cache})
