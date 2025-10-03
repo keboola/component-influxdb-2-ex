@@ -31,7 +31,7 @@ class Configuration(BaseModel):
     url: str
     token: str = Field(alias="#token")
     org: str = ""
-    source: Source
-    destination: Destination
+    source: Source = Field(default_factory=Source)
+    destination: Destination = Field(default_factory=Destination)
     debug: bool = False
     duckdb_max_memory_mb: int = 128

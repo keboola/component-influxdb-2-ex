@@ -14,6 +14,7 @@ from keboola.component.dao import BaseType, ColumnDefinition, SupportedDataTypes
 from keboola.component.exceptions import UserException
 from keboola.component.sync_actions import SelectElement
 
+
 from configuration import Configuration
 
 warnings.simplefilter("ignore", MissingPivotFunction)
@@ -219,13 +220,19 @@ class Component(ComponentBase):
     def list_uc_tables(self):
         buckets_api = self._influxdb.buckets_api()
         buckets_iter = buckets_api.find_buckets_iter()
-        return [SelectElement(b.name) for b in buckets_iter if b.type == "user"]
+        res = [SelectElement(b.name) for b in buckets_iter if b.type == "user"]
+        if not res:
+            res = [SelectElement("Unable to list buckets.")]
+        return res
 
     @sync_action("list_organizations")
     def list_organizations(self):
         organizations_api = self._influxdb.organizations_api()
         orgs = organizations_api.find_organizations()
-        return [SelectElement(o.name) for o in orgs]
+        res = [SelectElement(o.name) for o in orgs]
+        if not res:
+            res = [SelectElement("Unable to list organizations.")]
+        return res
 
 
 """

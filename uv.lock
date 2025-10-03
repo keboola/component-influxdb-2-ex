@@ -142,7 +142,7 @@ requires-dist = [
     { name = "flake8", specifier = ">=7.2.0" },
     { name = "freezegun", specifier = ">=1.5.1" },
     { name = "influxdb-client", specifier = ">=1.49.0" },
-    { name = "keboola-component", specifier = ">=1.6.10" },
+    { name = "keboola-component", specifier = ">=1.6.13" },
     { name = "keboola-http-client", specifier = ">=1.0.1" },
     { name = "keboola-utils", specifier = ">=1.1.0" },
     { name = "mock", specifier = ">=5.2.0" },
@@ -169,16 +169,16 @@ wheels = [
 
 [[package]]
 name = "keboola-component"
-version = "1.6.10"
+version = "1.6.13"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "deprecated" },
     { name = "pygelf" },
     { name = "pytz" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ef/dd/391f1e6eaae5e925f56f30788c40e38c8bce3a80ee898512e79ced2eabab/keboola.component-1.6.10.tar.gz", hash = "sha256:5f4c347e8e96bb4dff1fe1254217e88754a4edea8a1b147815552335dcfba941", size = 47336 }
+sdist = { url = "https://files.pythonhosted.org/packages/91/e9/80a83c04bccaad7f5d7b6e8b9c0305085db2bd22838f7323f57aaaefd2f4/keboola.component-1.6.13.tar.gz", hash = "sha256:11b072da1cab39233ff798217a876cdacf17f446decdb89735f295ca20662874", size = 59550 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/34/301082c106bff256e2871a5c5db54d691fdad77a9d8a89a52eef30cd18ed/keboola.component-1.6.10-py3-none-any.whl", hash = "sha256:9a13b73beb71373d9a2b456eb44f902cfcfc07747c084bfbfad761b5eaaa4d93", size = 42243 },
+    { url = "https://files.pythonhosted.org/packages/a4/35/f4dab3d75a155260b90c72bb37d03a9bfd24dc18f52ccea2d61e587dbef6/keboola.component-1.6.13-py3-none-any.whl", hash = "sha256:eceda4c2d083b3857d6eb98e30d7bfe48a48ed0f8567e6898218cee4d9391318", size = 44151 },
 ]
 
 [[package]]
