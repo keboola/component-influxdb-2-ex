@@ -81,6 +81,7 @@ class Component(ComponentBase):
             if isinstance(res_tables, pd.DataFrame) and res_tables.empty:
                 return
 
+            #  returns a single DataFrame if the result contains only one table
             if not isinstance(res_tables, list):
                 res_tables = [res_tables]
 
@@ -95,21 +96,7 @@ class Component(ComponentBase):
         tick = time.time()
         current_table.columns = [col.replace(".", "__") for col in current_table.columns]
 
-        col_names = current_table.columns.tolist()
-        pks = [c for c in col_names if c not in ["result", "table", "_start", "_stop", "_value", "_field"]]
-
-        available_tag_names = [tag for tag in tag_names if tag in col_names] if tag_names else []
-        if available_tag_names and self.params.destination.name_tables_by_tag_value:
-            tags_values = current_table.loc[0, available_tag_names].tolist()
-            table_name = "_".join(str(v) for v in tags_values)
-
-        else:
-            table_name = hashlib.md5(("_".join(pks) if pks else "out_table").encode()).hexdigest()
-
-        self.primary_keys[table_name] = available_tag_names
-
-        if "_measurement" in col_names:
-            self.primary_keys[table_name].append("_measurement")
+        table_name = self.save_pk_return_table_name(current_table, tag_names)
 
         select_clause = "SELECT * EXCLUDE('result','table','_start','_stop')"
         self._duckdb.sql(
@@ -117,6 +104,22 @@ class Component(ComponentBase):
         )
         self._duckdb.sql(f'INSERT INTO "{table_name}" BY NAME {select_clause} FROM current_table;')
         logging.debug(f"Wrote batch to table {table_name} in {time.time() - tick:.2f}s")
+
+    def save_pk_return_table_name(self, current_table, tag_names):
+        col_names = current_table.columns.tolist()
+        pks = [c for c in col_names if c not in ["result", "table", "_start", "_stop", "_value", "_field"]]
+        available_tag_names = [tag for tag in tag_names if tag in col_names] if tag_names else []
+        if available_tag_names and self.params.destination.name_tables_by_tag_value:
+            tags_values = current_table.loc[0, available_tag_names].tolist()
+            table_name = "_".join(str(v) for v in tags_values)
+
+        else:
+            # TODO use first xx from colnames
+            table_name = hashlib.md5(("_".join(pks) if pks else "out_table").encode()).hexdigest()
+        self.primary_keys[table_name] = available_tag_names
+        if "_measurement" in col_names:
+            self.primary_keys[table_name].append("_measurement")
+        return table_name
 
     def get_tag_names(self) -> set[str]:
         """
@@ -132,7 +135,12 @@ class Component(ComponentBase):
         return tag_names
 
     def export_db_tables(self):
-        for current_table in self._duckdb.execute("SHOW TABLES;").fetchall():
+        tables = self._duckdb.execute("SHOW TABLES;").fetchall()
+
+        if len(tables) != 1 and self.params.destination.table_name :
+            raise UserException("Parameter 'table_name' can be used only if the query returns single table.")
+
+        for current_table in tables:
             tick = time.time()
             current_table_name = current_table[0]
 
@@ -158,8 +166,12 @@ class Component(ComponentBase):
 
             pks = self.primary_keys.get(current_table_name, [])
 
+            table_name = current_table_name
+            if self.params.destination.table_name:
+                table_name = self.params.destination.table_name
+
             out_table = self.create_out_table_definition(
-                f"{current_table_name}.csv",
+                f"{table_name}.csv",
                 schema=schema,
                 primary_key=["_time"] + pks,
                 incremental=self.params.destination.incremental,
