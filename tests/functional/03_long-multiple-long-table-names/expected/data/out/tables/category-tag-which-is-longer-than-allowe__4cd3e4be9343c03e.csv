@@ -1,0 +1,11 @@
+_time,_value,_field,_measurement,category-tag-which-is-longer-than-allowed-for-storage-and-needs-to-be-renamed
+"1","0","temp","field","a"
+"2","1","temp","field","a"
+"3","2","temp","field","a"
+"4","3","temp","field","a"
+"5","4","temp","field","a"
+"6","5","temp","field","a"
+"7","6","temp","field","a"
+"8","7","temp","field","a"
+"9","8","temp","field","a"
+"10","9","temp","field","a"

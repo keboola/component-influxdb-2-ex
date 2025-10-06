@@ -5,6 +5,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # to be compiled during installation, eg. numpy, psycopg2, …
 # RUN apt-get update && apt-get install -y build-essential
 
+RUN apt-get update && apt-get install -y git
+
 WORKDIR /code/
 
 COPY pyproject.toml .

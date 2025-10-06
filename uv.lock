@@ -43,6 +43,14 @@ wheels = [
 ]
 
 [[package]]
+name = "datadirtest"
+version = "1.8.7"
+source = { git = "https://github.com/keboola/datadirtest#a1f98b41eb13ef33e5f62d9fd1476a09cebed6f3" }
+dependencies = [
+    { name = "pathlib" },
+]
+
+[[package]]
 name = "dateparser"
 version = "1.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -123,6 +131,7 @@ wheels = [
 name = "influxdb-2-extractor"
 source = { virtual = "." }
 dependencies = [
+    { name = "datadirtest" },
     { name = "duckdb" },
     { name = "flake8" },
     { name = "freezegun" },
@@ -138,6 +147,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "datadirtest", git = "https://github.com/keboola/datadirtest" },
     { name = "duckdb", specifier = ">=1.3.2" },
     { name = "flake8", specifier = ">=7.2.0" },
     { name = "freezegun", specifier = ">=1.5.1" },
@@ -301,6 +311,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/15/d5/f0486090eb18dd8710bf60afeaf638ba6817047c0c8ae5c6a25598665609/pandas-2.3.2-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b37205ad6f00d52f16b6d09f406434ba928c1a1966e2771006a9033c736d30d2", size = 11883216 },
     { url = "https://files.pythonhosted.org/packages/10/86/692050c119696da19e20245bbd650d8dfca6ceb577da027c3a73c62a047e/pandas-2.3.2-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:837248b4fc3a9b83b9c6214699a13f069dc13510a6a6d7f9ba33145d2841a012", size = 12699743 },
     { url = "https://files.pythonhosted.org/packages/cd/d7/612123674d7b17cf345aad0a10289b2a384bff404e0463a83c4a3a59d205/pandas-2.3.2-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:d2c3554bd31b731cd6490d94a28f3abb8dd770634a9e06eb6d2911b9827db370", size = 13186141 },
+]
+
+[[package]]
+name = "pathlib"
+version = "1.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/aa/9b065a76b9af472437a0059f77e8f962fe350438b927cb80184c32f075eb/pathlib-1.0.1.tar.gz", hash = "sha256:6940718dfc3eff4258203ad5021090933e5c04707d5ca8cc9e73c94a7894ea9f", size = 49298 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/78/f9/690a8600b93c332de3ab4a344a4ac34f00c8f104917061f779db6a918ed6/pathlib-1.0.1-py3-none-any.whl", hash = "sha256:f35f95ab8b0f59e6d354090350b44a80a80635d22efdedfa84c7ad1cf0a74147", size = 14363 },
 ]
 
 [[package]]
