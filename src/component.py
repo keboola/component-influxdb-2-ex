@@ -98,7 +98,9 @@ class Component(ComponentBase):
 
         table_name = self.save_pk_return_table_name(current_table, tag_names)
 
-        select_clause = "SELECT * EXCLUDE('result','table','_start','_stop')"
+        to_exclude = set(current_table.columns).intersection({"result", "table", "_start", "_stop"})
+
+        select_clause = f"SELECT * EXCLUDE ('{"', '".join(to_exclude)}')"
         self._duckdb.sql(
             f'CREATE TABLE IF NOT EXISTS "{table_name}" AS {select_clause} FROM current_table WITH NO DATA;'
         )
@@ -135,7 +137,6 @@ class Component(ComponentBase):
         if not isinstance(res_helper, list):
             res_helper = [res_helper]
         all_columns = set().union(*[df.columns for df in res_helper])
-        logging.error(f"res: {all_columns}")
         tag_names = {col for col in all_columns if not col.startswith("_") and col not in {"result", "table"}}
         if self.params.destination.name_tables_by_tag_value and not tag_names:
             raise UserException("No tag columns found in the source bucket, cannot name tables by tag value.")
@@ -150,6 +151,15 @@ class Component(ComponentBase):
         for current_table in tables:
             tick = time.time()
             current_table_name = current_table[0]
+
+            # replace time column with index in test mode
+            if self.params.test_mode:
+                self._duckdb.execute(f"""
+                CREATE OR REPLACE TABLE "{current_table_name}" AS (
+                SELECT ROW_NUMBER() OVER () AS _time, * EXCLUDE (_time)
+                FROM "{current_table_name}"
+                )
+                """)
 
             # Get current table schema with column names and data types
             table_meta = self._duckdb.execute(f'DESCRIBE "{current_table_name}";').fetchall()
