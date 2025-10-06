@@ -1,9 +1,11 @@
 import influxdb_client
 from datadirtest import TestDataDir
 from influxdb_client.client.write_api import SYNCHRONOUS
+import time
 
 
 def run(context: TestDataDir):
+    time.sleep(10)  # wait for influxdb to be ready
     client = influxdb_client.InfluxDBClient(url="http://influxdb2:8086", token="token", org="org")
     write_api = client.write_api(write_options=SYNCHRONOUS)
 
