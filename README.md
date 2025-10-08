@@ -27,7 +27,7 @@ Each configuration row represents a data extraction job with the following param
 - **Query** - Flux query for data extraction with placeholders `{bucket}`, `{start}`, `{batch_size}`, `{offset}`
   - Default: `from(bucket: "{bucket}") |> range(start: {start}) |> limit(n: {batch_size}, offset: {offset})`
 - **Start Time** - Absolute or relative time value in FluxQL supported formats:
-  - Examples: `-1h`, `2020-05-10T21:00:00Z`, `1567029600`, or `last_run` (sses last successful run time, if unavailable, downloads from the beginning)
+  - Examples: `-1h`, `2020-05-10T21:00:00Z`, `1567029600`, or `last_run` (uses last successful run time, if unavailable, downloads from the beginning)
   - Default: `last_run`
 - **Batch Size** - Number of rows to load per batch (default: 10,000)
 

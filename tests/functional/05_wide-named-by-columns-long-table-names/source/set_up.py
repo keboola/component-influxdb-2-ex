@@ -19,8 +19,8 @@ def run(context: TestDataDir):
              .field("temp", i))
         write_api.write(bucket="bucket", org="org", record=p)
 
-        p = (influxdb_client.Point("field").
-             tag("category-which-is-longer-than-allowed-for-storage-and-needs-to-be-renamed", "a")
+        p = (influxdb_client.Point("field")
+             .tag("category-which-is-longer-than-allowed-for-storage-and-needs-to-be-renamed", "a")
              .field("temp", i).field("hum", i + 50))
         write_api.write(bucket="bucket", org="org", record=p)
 
