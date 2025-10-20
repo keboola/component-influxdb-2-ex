@@ -98,13 +98,20 @@
       },
       "propertyOrder": 2
     },
+    "duckdb_max_memory_mb": {
+      "type": "integer",
+      "title": "DuckDB Maximum Memory (MB)",
+      "default": 256,
+      "propertyOrder": 3,
+      "description": "The maximum memory that DuckDB can use for data processing is influenced by the batch size as well as the size and structure of the data extracted from InfluxDB."
+    },
     "debug": {
       "type": "boolean",
       "title": "Debug mode",
       "format": "checkbox",
       "default": false,
       "description": "If enabled, the component will produce detailed logs",
-      "propertyOrder": 3
+      "propertyOrder": 4
     }
   }
 }

@@ -33,5 +33,5 @@ class Configuration(BaseModel):
     source: Source = Field(default_factory=Source)
     destination: Destination = Field(default_factory=Destination)
     debug: bool = False
-    duckdb_max_memory_mb: int = 128
+    duckdb_max_memory_mb: int = 256
     test_mode: bool = False
