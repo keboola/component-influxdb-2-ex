@@ -148,7 +148,7 @@ class Component(ComponentBase):
             tick = time.time()
             current_table_name = current_table[0]
 
-            # replace time column with index in test mode
+            # replace time column with index in test mode (so we have deterministic output for datadir tests)
             if self.params.test_mode:
                 self._duckdb.execute(f"""
                 CREATE OR REPLACE TABLE "{current_table_name}" AS (
