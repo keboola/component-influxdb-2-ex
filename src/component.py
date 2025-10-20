@@ -54,8 +54,7 @@ class Component(ComponentBase):
         }
         conn = duckdb.connect(config=config)
 
-        if not self.params.destination.preserve_insertion_order:
-            conn.execute("SET preserve_insertion_order = false;").fetchall()
+        conn.execute("SET preserve_insertion_order = false;").fetchall()
 
         return conn
 

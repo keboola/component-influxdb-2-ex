@@ -15,7 +15,6 @@ class Source(BaseModel):
 
 
 class Destination(BaseModel):
-    preserve_insertion_order: bool = True
     table_name: str = ""
     name_tables_by_tag_value: bool = False
     load_type: LoadType = Field(default=LoadType.incremental_load)

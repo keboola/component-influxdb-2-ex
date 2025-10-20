@@ -75,19 +75,6 @@
             }
           }
         },
-        "preserve_insertion_order": {
-          "type": "boolean",
-          "title": "Preserve insertion order",
-          "format": "checkbox",
-          "default": true,
-          "description": "If enabled, the writer will preserve the order of the rows in the destination table, when encountering OOM error, disabling this option may help",
-          "propertyOrder": 3,
-          "options": {
-            "dependencies": {
-              "helper_access_method": "direct_storage"
-            }
-          }
-        },
         "load_type": {
           "enum": [
             "incremental_load",
@@ -106,7 +93,7 @@
             }
           },
           "description": "If Full load is used, the destination table will be overwritten every run. If Incremental Load is used, data will be upserted into the destination table based on the primary key. Append modes do not contain any primary keys and are not deduplicated.",
-          "propertyOrder": 4
+          "propertyOrder": 3
         }
       },
       "propertyOrder": 2
