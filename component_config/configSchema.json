@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "title": "extractor configuration",
+  "title": "Extractor Configuration",
   "required": [],
   "properties": {
     "url": {
