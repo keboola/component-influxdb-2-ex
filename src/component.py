@@ -26,7 +26,7 @@ class Component(ComponentBase):
     def __init__(self):
         super().__init__()
         self.params = Configuration(**self.configuration.parameters)
-        self._influxdb = self.init_influxdb()
+        self._influx = influxdb_client.InfluxDBClient(url=self.params.url, token=self.params.token, org=self.params.org)
         self._duckdb = self.init_duckdb()
         self.primary_keys = {}
         self.columns_cache = {}
@@ -40,9 +40,6 @@ class Component(ComponentBase):
         self.download_data_to_tmp_tables()
         self.export_db_tables()
         self.write_state_file({"last_run": start_time, "columns_cache": self.columns_cache})
-
-    def init_influxdb(self) -> influxdb_client.InfluxDBClient:
-        return influxdb_client.InfluxDBClient(url=self.params.url, token=self.params.token, org=self.params.org)
 
     def init_duckdb(self) -> duckdb.DuckDBPyConnection:
         os.makedirs(DUCK_DB_DIR, exist_ok=True)
@@ -75,7 +72,7 @@ class Component(ComponentBase):
                 offset=offset,
             )
             logging.debug(f"Running query: {query}")
-            res_tables = self._influxdb.query_api().query_data_frame(query)
+            res_tables = self._influx.query_api().query_data_frame(query)
 
             if isinstance(res_tables, pd.DataFrame) and res_tables.empty:
                 return
@@ -130,7 +127,7 @@ class Component(ComponentBase):
         """
         run query to export schema of long table and filter tag columns
         """
-        res_helper = self._influxdb.query_api().query_data_frame(
+        res_helper = self._influx.query_api().query_data_frame(
             'from(bucket: "{bucket}")|> range(start: 0)|> limit(n: 0)'.format(bucket=self.params.source.bucket)
         )
         if not isinstance(res_helper, list):
@@ -246,7 +243,7 @@ class Component(ComponentBase):
 
     @sync_action("list_buckets")
     def list_uc_tables(self):
-        buckets_api = self._influxdb.buckets_api()
+        buckets_api = self._influx.buckets_api()
         buckets_iter = buckets_api.find_buckets_iter()
         res = [SelectElement(b.name) for b in buckets_iter if b.type == "user"]
         if not res:
@@ -255,7 +252,7 @@ class Component(ComponentBase):
 
     @sync_action("list_organizations")
     def list_organizations(self):
-        organizations_api = self._influxdb.organizations_api()
+        organizations_api = self._influx.organizations_api()
         orgs = organizations_api.find_organizations()
         res = [SelectElement(o.name) for o in orgs]
         if not res:
