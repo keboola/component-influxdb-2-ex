@@ -1,1 +1,117 @@
-{}
+{
+  "type": "object",
+  "title": "Component configuration",
+  "required": [
+    "destination",
+    "source",
+    "debug"
+  ],
+  "properties": {
+    "source": {
+      "type": "object",
+      "title": "Data Source",
+      "properties": {
+        "bucket": {
+          "title": "Bucket",
+          "type": "string",
+          "format": "select",
+          "enum": [],
+          "options": {
+            "async": {
+              "label": "Load buckets",
+              "action": "list_buckets"
+            }
+          },
+          "propertyOrder": 1
+        },
+        "query": {
+          "title": "Query",
+          "type": "string",
+          "format": "textarea",
+          "default": "from(bucket: \"{bucket}\")\n|> range(start: {start})\n|> limit(n: {batch_size}, offset: {offset})",
+          "description": "Flux query for extracting data from InfluxDB with placeholders: {bucket}, {start}, {batch_size}, {offset}.",
+          "options": {
+            "input_height": "100px"
+          },
+          "propertyOrder": 2
+        },
+        "start": {
+          "title": "Start Time",
+          "type": "string",
+          "description": "Absolute or relative value in <a href=\"https://docs.influxdata.com/flux/v0/stdlib/universe/range/#start\">supported formats by FluxQL</a> for example: -1h, 2020-05-10T21:00:00Z, 1567029600 or 'last_run' to use the time of the last successful run.",
+          "propertyOrder": 3,
+          "default": "last_run"
+        },
+        "batch_size": {
+          "type": "integer",
+          "title": "Batch size",
+          "default": 10000,
+          "propertyOrder": 4,
+          "description": "By default, the extractor will load data in batches of 10 000 rows. You can adjust this value to optimize the performance (or solve OOM) of the writer."
+        }
+      },
+      "propertyOrder": 1
+    },
+    "destination": {
+      "type": "object",
+      "title": "Data Destination",
+      "properties": {
+        "name_tables_by_tag_value": {
+          "type": "boolean",
+          "title": "Name tables by tags values",
+          "format": "checkbox",
+          "default": false,
+          "description": "If enabled, the writer will create a separate table for each value of the specified tags.",
+          "propertyOrder": 1
+        },
+        "table_name": {
+          "title": "Table Name",
+          "type": "string",
+          "description": "Name of the destination table. Please ensure that the query returns exactly one table.",
+          "propertyOrder": 3,
+          "options": {
+            "dependencies": {
+              "name_tables_by_tag_value": false
+            }
+          }
+        },
+        "load_type": {
+          "enum": [
+            "incremental_load",
+            "full_load"
+          ],
+          "type": "string",
+          "title": "Load Type",
+          "default": "incremental_load",
+          "options": {
+            "enum_titles": [
+              "Incremental Load",
+              "Full Load"
+            ],
+            "dependencies": {
+              "parquet_output": false
+            }
+          },
+          "description": "If Full load is used, the destination table will be overwritten every run. If Incremental Load is used, data will be upserted into the destination table based on the primary key. Append modes do not contain any primary keys and are not deduplicated.",
+          "propertyOrder": 3
+        }
+      },
+      "propertyOrder": 2
+    },
+    "duckdb_max_memory_mb": {
+      "type": "integer",
+      "title": "DuckDB Maximum Memory (MB)",
+      "default": 256,
+      "propertyOrder": 3,
+      "description": "The maximum memory that DuckDB can use for data processing is influenced by the batch size as well as the size and structure of the data extracted from InfluxDB."
+    },
+    "debug": {
+      "type": "boolean",
+      "title": "Debug mode",
+      "format": "checkbox",
+      "default": false,
+      "description": "If enabled, the component will produce detailed logs",
+      "propertyOrder": 4
+    }
+  }
+}

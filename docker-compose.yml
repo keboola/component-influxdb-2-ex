@@ -10,6 +10,9 @@ services:
   test:
     # Use to run flake8 and unittests checks
     build: .
+    depends_on:
+      influxdb2:
+        condition: service_started
     volumes:
       - ./:/code
       - ./data:/data
@@ -18,3 +21,17 @@ services:
     command:
       - /bin/sh
       - /code/scripts/build_n_test.sh
+
+  influxdb2:
+    image: influxdb:2
+    container_name: influxdb2
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=user
+      - DOCKER_INFLUXDB_INIT_PASSWORD=password1
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=token
+      - DOCKER_INFLUXDB_INIT_ORG=org
+      - DOCKER_INFLUXDB_INIT_BUCKET=bucket
+      - INFLUXD_REPORTING_DISABLED=true

@@ -1,0 +1,20 @@
+{
+  "storage": {
+    "output": {
+      "tables": [],
+      "files": []
+    }
+  },
+  "parameters": {
+    "url": "http://influxdb2:8086",
+    "#token": "token",
+    "org": "org",
+    "source": {
+      "query": "from(bucket: \"{bucket}\")|> range(start: {start})|> limit(n: {batch_size}, offset: {offset})",
+      "bucket": "bucket",
+      "start_timestamp": "last_run",
+      "start": "-1h"
+    },
+    "test_mode": true
+  }
+}

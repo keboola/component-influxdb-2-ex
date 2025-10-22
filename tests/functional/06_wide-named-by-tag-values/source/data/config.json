@@ -1,0 +1,23 @@
+{
+  "storage": {
+    "output": {
+      "tables": [],
+      "files": []
+    }
+  },
+  "parameters": {
+    "url": "http://influxdb2:8086",
+    "#token": "token",
+    "org": "org",
+    "source": {
+      "query": "from(bucket: \"{bucket}\")|> range(start: {start})|> limit(n: {batch_size}, offset: {offset}) |> filter(fn: (r) => r[\"category-tag\"] == \"a\") |> pivot(rowKey: [\"_time\"], columnKey: [\"_measurement\", \"_field\"], valueColumn: \"_value\")",
+      "bucket": "bucket",
+      "start_timestamp": "last_run",
+      "start": "-1h"
+    },
+    "destination": {
+      "name_tables_by_tag_value": true
+    },
+    "test_mode": true
+  }
+}

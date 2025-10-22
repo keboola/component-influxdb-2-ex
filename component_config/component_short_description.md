@@ -1,1 +1,1 @@
-InfluxDB 2 Extractor short description
+InfluxDB 2 is a time-series database.
