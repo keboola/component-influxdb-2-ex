@@ -91,6 +91,16 @@ class Component(ComponentBase):
     def write_data_frame_to_db(self, current_table, tag_names):
         tick = time.time()
         current_table.columns = [col.replace(".", "__") for col in current_table.columns]
+        unnamed_counter = 0
+        sanitized_columns = []
+        for col in current_table.columns:
+            if not col or not col.strip():
+                sanitized_columns.append(f"_unnamed_{unnamed_counter}")
+                logging.warning(f"Empty column name found in data, renamed to '_unnamed_{unnamed_counter}'")
+                unnamed_counter += 1
+            else:
+                sanitized_columns.append(col)
+        current_table.columns = sanitized_columns
 
         table_name = self.save_pk_return_table_name(current_table, tag_names)
 
