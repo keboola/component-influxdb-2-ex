@@ -26,7 +26,9 @@ class Component(ComponentBase):
     def __init__(self):
         super().__init__()
         self.params = Configuration(**self.configuration.parameters)
-        self._influx = influxdb_client.InfluxDBClient(url=self.params.url, token=self.params.token, org=self.params.org)
+        self._influx = influxdb_client.InfluxDBClient(
+            url=self.params.url, token=self.params.token, org=self.params.org, timeout=300_000
+        )
         self._duckdb = self.init_duckdb()
         self.primary_keys = {}
         self.columns_cache = {}
@@ -57,8 +59,9 @@ class Component(ComponentBase):
 
     def download_data_to_tmp_tables(self):
         start = self.last_run if self.params.source.start == "last_run" else self.params.source.start
-
+        logging.info(f"Fetching tag names from bucket '{self.params.source.bucket}'...")
         tag_names = self.get_tag_names()
+        logging.info(f"Found {len(tag_names)} tag(s): {tag_names}")
 
         offset = 0
         i = 0
@@ -71,6 +74,7 @@ class Component(ComponentBase):
                 batch_size=self.params.source.batch_size,
                 offset=offset,
             )
+            logging.info(f"Running batch {i} query (offset={offset})...")
             logging.debug(f"Running query: {query}")
             res_tables = self._influx.query_api().query_data_frame(query)
 
