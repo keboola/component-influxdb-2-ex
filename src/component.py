@@ -110,7 +110,7 @@ class Component(ComponentBase):
 
         to_exclude = set(current_table.columns).intersection({"result", "table", "_start", "_stop"})
 
-        select_clause = f"SELECT * EXCLUDE ('{"', '".join(to_exclude)}')"
+        select_clause = f"SELECT * EXCLUDE ('{"', '".join(to_exclude)}')" if to_exclude else "SELECT *"
         self._duckdb.sql(
             f'CREATE TABLE IF NOT EXISTS "{table_name}" AS {select_clause} FROM current_table WITH NO DATA;'
         )
