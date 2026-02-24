@@ -35,6 +35,17 @@
           },
           "propertyOrder": 2
         },
+        "query_preview": {
+          "type": "button",
+          "format": "sync-action",
+          "options": {
+            "async": {
+              "label": "Query Preview",
+              "action": "query_preview"
+            }
+          },
+          "propertyOrder": 3
+        },
         "start": {
           "title": "Start Time",
           "type": "string",
