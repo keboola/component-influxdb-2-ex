@@ -8,11 +8,12 @@ from collections import OrderedDict
 import duckdb
 import influxdb_client
 import pandas as pd
+import polars as pl
 from influxdb_client.client.warnings import MissingPivotFunction
 from keboola.component.base import ComponentBase, sync_action
 from keboola.component.dao import BaseType, ColumnDefinition, SupportedDataTypes
 from keboola.component.exceptions import UserException
-from keboola.component.sync_actions import SelectElement
+from keboola.component.sync_actions import SelectElement, ValidationResult, MessageType
 
 
 from configuration import Configuration
@@ -240,6 +241,44 @@ class Component(ComponentBase):
             stored_datatype = cached_columns[col_name]
             logging.info(f"Adding missing column '{col_name}' with type '{stored_datatype}' to table '{table_name}'")
             self._duckdb.execute(f'ALTER TABLE "{table_name}" ADD COLUMN "{col_name}" {stored_datatype};')
+
+    @sync_action("query_preview")
+    def query_preview(self):
+        try:
+            start = self.params.source.start if self.params.source.start != "last_run" else "0"
+            query = self.params.source.query.format(
+                bucket=self.params.source.bucket,
+                start=start,
+                batch_size=self.params.source.batch_size,
+                offset=0,
+            )
+            query += " |> limit(n: 10)"
+
+            result = self._influx.query_api().query_data_frame(query)
+
+            if not isinstance(result, list):
+                result = [result]
+
+            result = [df for df in result if not df.empty]
+
+            if not result:
+                return ValidationResult("No data returned by the query.", MessageType.WARNING)
+
+            pl.Config.set_tbl_formatting("ASCII_MARKDOWN")
+            pl.Config.set_tbl_hide_dataframe_shape(True)
+
+            tables_output = []
+            for i, df in enumerate(result, 1):
+                if "_measurement" in df.columns:
+                    table_label = df["_measurement"].iloc[0]
+                else:
+                    table_label = f"Table {i}"
+                tables_output.append(f"Table: {table_label}\n{str(pl.from_pandas(df))}")
+
+            return ValidationResult("\n\n".join(tables_output), MessageType.SUCCESS)
+
+        except Exception as e:
+            return ValidationResult(f"Error during query execution: {str(e)}", MessageType.ERROR)
 
     @sync_action("list_buckets")
     def list_uc_tables(self):

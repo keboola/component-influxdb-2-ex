@@ -43,6 +43,9 @@ Each configuration row represents a data extraction job with the following param
 ### Additional Options
 - **Debug Mode** - Enables detailed logging for troubleshooting, including every executed query, time taken, and number of rows fetched (default: disabled)
 
+### Query Preview
+The component provides a **Query Preview** sync action that lets you test your query directly from the configuration UI before running the full extraction. It executes the configured query with an appended `|> limit(n: 10)` to return only the first 10 rows.
+
 ## Notes
 - If the table name is too long for Keboola Storage, only the first 40 characters are used, followed by a hash of the complete table name.
 - Leading underscores in column names are removed.
