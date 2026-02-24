@@ -245,7 +245,7 @@ class Component(ComponentBase):
     @sync_action("query_preview")
     def query_preview(self):
         try:
-            start = self.params.source.start if self.params.source.start != "last_run" else 0
+            start = self.params.source.start if self.params.source.start != "last_run" else "0"
             query = self.params.source.query.format(
                 bucket=self.params.source.bucket,
                 start=start,
