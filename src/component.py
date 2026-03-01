@@ -27,7 +27,9 @@ class Component(ComponentBase):
     def __init__(self):
         super().__init__()
         self.params = Configuration(**self.configuration.parameters)
-        self._influx = influxdb_client.InfluxDBClient(url=self.params.url, token=self.params.token, org=self.params.org)
+        self._influx = influxdb_client.InfluxDBClient(
+            url=self.params.url, token=self.params.token, org=self.params.org, timeout=300_000
+        )
         self._duckdb = self.init_duckdb()
         self.primary_keys = {}
         self.columns_cache = {}
@@ -58,8 +60,9 @@ class Component(ComponentBase):
 
     def download_data_to_tmp_tables(self):
         start = self.last_run if self.params.source.start == "last_run" else self.params.source.start
-
+        logging.info(f"Fetching tag names from bucket '{self.params.source.bucket}'...")
         tag_names = self.get_tag_names()
+        logging.info(f"Found {len(tag_names)} tag(s): {tag_names}")
 
         offset = 0
         i = 0
@@ -72,6 +75,7 @@ class Component(ComponentBase):
                 batch_size=self.params.source.batch_size,
                 offset=offset,
             )
+            logging.info(f"Running batch {i} query (offset={offset})...")
             logging.debug(f"Running query: {query}")
             res_tables = self._influx.query_api().query_data_frame(query)
 
@@ -92,12 +96,22 @@ class Component(ComponentBase):
     def write_data_frame_to_db(self, current_table, tag_names):
         tick = time.time()
         current_table.columns = [col.replace(".", "__") for col in current_table.columns]
+        unnamed_counter = 0
+        sanitized_columns = []
+        for col in current_table.columns:
+            if not col or not col.strip():
+                sanitized_columns.append(f"_unnamed_{unnamed_counter}")
+                logging.warning(f"Empty column name found in data, renamed to '_unnamed_{unnamed_counter}'")
+                unnamed_counter += 1
+            else:
+                sanitized_columns.append(col)
+        current_table.columns = sanitized_columns
 
         table_name = self.save_pk_return_table_name(current_table, tag_names)
 
         to_exclude = set(current_table.columns).intersection({"result", "table", "_start", "_stop"})
 
-        select_clause = f"SELECT * EXCLUDE ('{"', '".join(to_exclude)}')"
+        select_clause = f"SELECT * EXCLUDE ('{"', '".join(to_exclude)}')" if to_exclude else "SELECT *"
         self._duckdb.sql(
             f'CREATE TABLE IF NOT EXISTS "{table_name}" AS {select_clause} FROM current_table WITH NO DATA;'
         )
