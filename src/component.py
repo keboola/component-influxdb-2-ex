@@ -139,11 +139,31 @@ class Component(ComponentBase):
             raise UserException("No tag columns found in the source bucket, cannot name tables by tag value.")
         return tag_names
 
+    def _merge_all_tables(self, tables):
+        """Merge multiple DuckDB tables into one when a single output table is requested via table_name."""
+        table_names = [t[0] for t in tables]
+        target = self.params.destination.table_name
+
+        logging.info(f"Merging {len(table_names)} result tables into single output '{target}'.")
+
+        union_parts = [f'SELECT * FROM "{t}"' for t in table_names]
+        union_query = " UNION ALL BY NAME ".join(union_parts)
+        self._duckdb.execute(f'CREATE TABLE "__merged_tmp" AS {union_query};')
+
+        merged_pks = set()
+        for t in table_names:
+            merged_pks.update(self.primary_keys.pop(t, []))
+            self._duckdb.execute(f'DROP TABLE "{t}";')
+
+        self._duckdb.execute(f'ALTER TABLE "__merged_tmp" RENAME TO "{target}";')
+        self.primary_keys[target] = list(merged_pks)
+
     def export_db_tables(self):
         tables = self._duckdb.execute("SHOW TABLES;").fetchall()
 
-        if len(tables) != 1 and self.params.destination.table_name:
-            raise UserException("Parameter 'table_name' can be used only if the query returns single table.")
+        if len(tables) > 1 and self.params.destination.table_name:
+            self._merge_all_tables(tables)
+            tables = self._duckdb.execute("SHOW TABLES;").fetchall()
 
         for current_table in tables:
             tick = time.time()
