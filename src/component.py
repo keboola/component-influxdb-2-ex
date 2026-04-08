@@ -63,6 +63,7 @@ class Component(ComponentBase):
 
         offset = 0
         i = 0
+        consecutive_empty = 0
         while True:
             i += 1
             tick = time.time()
@@ -76,7 +77,16 @@ class Component(ComponentBase):
             res_tables = self._influx.query_api().query_data_frame(query)
 
             if isinstance(res_tables, pd.DataFrame) and res_tables.empty:
-                return
+                consecutive_empty += 1
+                if consecutive_empty >= self.params.source.max_empty_batches:
+                    if consecutive_empty > 1:
+                        logging.info(f"Stopping after {consecutive_empty} consecutive empty batches.")
+                    return
+                offset += self.params.source.batch_size
+                logging.debug(f"Empty batch {consecutive_empty}/{self.params.source.max_empty_batches}, continuing.")
+                continue
+
+            consecutive_empty = 0
 
             #  returns a single DataFrame if the result contains only one table
             if not isinstance(res_tables, list):
