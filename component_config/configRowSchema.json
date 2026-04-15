@@ -28,8 +28,8 @@
           "title": "Query",
           "type": "string",
           "format": "textarea",
-          "default": "from(bucket: \"{bucket}\")\n|> range(start: {start})\n|> limit(n: {batch_size}, offset: {offset})",
-          "description": "Flux query for extracting data from InfluxDB with placeholders: {bucket}, {start}, {batch_size}, {offset}.",
+          "default": "from(bucket: \"{bucket}\")\n|> range(start: {start}, stop: {stop})\n|> limit(n: {batch_size}, offset: {offset})",
+          "description": "Flux query for extracting data from InfluxDB with placeholders: {bucket}, {start}, {stop}, {batch_size}, {offset}.",
           "options": {
             "input_height": "100px"
           },

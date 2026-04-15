@@ -39,7 +39,7 @@ class Component(ComponentBase):
         state = self.get_state_file() or {}
         self.columns_cache = state.get("columns_cache") or {}
         self.last_run = state.get("last_run", 0)
-        self.download_data_to_tmp_tables()
+        self.download_data_to_tmp_tables(start_time)
         self.export_db_tables()
         self.write_state_file({"last_run": start_time, "columns_cache": self.columns_cache})
 
@@ -57,7 +57,7 @@ class Component(ComponentBase):
 
         return conn
 
-    def download_data_to_tmp_tables(self):
+    def download_data_to_tmp_tables(self, stop_time: int):
         start = self.last_run if self.params.source.start == "last_run" else self.params.source.start
 
         tag_names = self.get_tag_names()
@@ -71,6 +71,7 @@ class Component(ComponentBase):
             query = self.params.source.query.format(
                 bucket=self.params.source.bucket,
                 start=start,
+                stop=stop_time,
                 batch_size=self.params.source.batch_size,
                 offset=offset,
             )
@@ -280,6 +281,7 @@ class Component(ComponentBase):
             query = self.params.source.query.format(
                 bucket=self.params.source.bucket,
                 start=start,
+                stop=int(time.time()),
                 batch_size=self.params.source.batch_size,
                 offset=0,
             )
