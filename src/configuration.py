@@ -12,7 +12,6 @@ class Source(BaseModel):
     query: str = 'from(bucket: "{bucket}")|> range(start: {start})|> limit(n: {batch_size}, offset: {offset})'
     start: str = ""
     batch_size: int = 10_000
-    max_empty_batches: int = 3
 
 
 class Destination(BaseModel):

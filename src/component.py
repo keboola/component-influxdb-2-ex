@@ -21,6 +21,7 @@ from configuration import Configuration
 warnings.simplefilter("ignore", MissingPivotFunction)
 
 DUCK_DB_DIR = os.path.join(os.environ.get("TMPDIR", "/tmp"), "duckdb")
+MAX_EMPTY_BATCHES = 3
 
 
 class Component(ComponentBase):
@@ -78,12 +79,12 @@ class Component(ComponentBase):
 
             if isinstance(res_tables, pd.DataFrame) and res_tables.empty:
                 consecutive_empty += 1
-                if consecutive_empty >= self.params.source.max_empty_batches:
+                if consecutive_empty >= MAX_EMPTY_BATCHES:
                     if consecutive_empty > 1:
                         logging.info(f"Stopping after {consecutive_empty} consecutive empty batches.")
                     return
                 offset += self.params.source.batch_size
-                logging.debug(f"Empty batch {consecutive_empty}/{self.params.source.max_empty_batches}, continuing.")
+                logging.debug(f"Empty batch {consecutive_empty}/{MAX_EMPTY_BATCHES}, continuing.")
                 continue
 
             consecutive_empty = 0
