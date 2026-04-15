@@ -9,8 +9,13 @@ class LoadType(str, Enum):
 
 class Source(BaseModel):
     bucket: str = ""
-    query: str = 'from(bucket: "{bucket}")|> range(start: {start})|> limit(n: {batch_size}, offset: {offset})'
+    query: str = (
+        'from(bucket: "{bucket}")'
+        "|> range(start: {start}, stop: {stop})"
+        "|> limit(n: {batch_size}, offset: {offset})"
+    )
     start: str = ""
+    stop: str = "now"
     batch_size: int = 10_000
 
 

@@ -28,8 +28,8 @@
           "title": "Query",
           "type": "string",
           "format": "textarea",
-          "default": "from(bucket: \"{bucket}\")\n|> range(start: {start})\n|> limit(n: {batch_size}, offset: {offset})",
-          "description": "Flux query for extracting data from InfluxDB with placeholders: {bucket}, {start}, {batch_size}, {offset}.",
+          "default": "from(bucket: \"{bucket}\")\n|> range(start: {start}, stop: {stop})\n|> limit(n: {batch_size}, offset: {offset})",
+          "description": "Flux query for extracting data from InfluxDB with placeholders: {bucket}, {start}, {stop}, {batch_size}, {offset}.",
           "options": {
             "input_height": "100px"
           },
@@ -52,6 +52,13 @@
           "description": "Absolute or relative value in <a href=\"https://docs.influxdata.com/flux/v0/stdlib/universe/range/#start\">supported formats by FluxQL</a> for example: -1h, 2020-05-10T21:00:00Z, 1567029600 or 'last_run' to use the time of the last successful run.",
           "propertyOrder": 3,
           "default": "last_run"
+        },
+        "stop": {
+          "title": "Stop Time",
+          "type": "string",
+          "description": "Upper bound for the time range. Use 'now' to automatically use the current time at the start of each run (recommended for incremental loads). Accepts the same formats as Start Time, for example: 2020-05-10T21:00:00Z, 1567029600.",
+          "propertyOrder": 4,
+          "default": "now"
         },
         "batch_size": {
           "type": "integer",
