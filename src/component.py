@@ -21,6 +21,7 @@ from configuration import Configuration
 warnings.simplefilter("ignore", MissingPivotFunction)
 
 DUCK_DB_DIR = os.path.join(os.environ.get("TMPDIR", "/tmp"), "duckdb")
+MAX_EMPTY_BATCHES = 3
 
 
 class Component(ComponentBase):
@@ -64,6 +65,7 @@ class Component(ComponentBase):
 
         offset = 0
         i = 0
+        consecutive_empty = 0
         while True:
             i += 1
             tick = time.time()
@@ -78,7 +80,16 @@ class Component(ComponentBase):
             res_tables = self._influx.query_api().query_data_frame(query)
 
             if isinstance(res_tables, pd.DataFrame) and res_tables.empty:
-                return
+                consecutive_empty += 1
+                if consecutive_empty >= MAX_EMPTY_BATCHES:
+                    if consecutive_empty > 1:
+                        logging.info(f"Stopping after {consecutive_empty} consecutive empty batches.")
+                    return
+                offset += self.params.source.batch_size
+                logging.debug(f"Empty batch {consecutive_empty}/{MAX_EMPTY_BATCHES}, continuing.")
+                continue
+
+            consecutive_empty = 0
 
             #  returns a single DataFrame if the result contains only one table
             if not isinstance(res_tables, list):
@@ -141,11 +152,31 @@ class Component(ComponentBase):
             raise UserException("No tag columns found in the source bucket, cannot name tables by tag value.")
         return tag_names
 
+    def _merge_all_tables(self, tables):
+        """Merge multiple DuckDB tables into one when a single output table is requested via table_name."""
+        table_names = [t[0] for t in tables]
+        target = self.params.destination.table_name
+
+        logging.info(f"Merging {len(table_names)} result tables into single output '{target}'.")
+
+        union_parts = [f'SELECT * FROM "{t}"' for t in table_names]
+        union_query = " UNION ALL BY NAME ".join(union_parts)
+        self._duckdb.execute(f'CREATE TABLE "__merged_tmp" AS {union_query};')
+
+        merged_pks = set()
+        for t in table_names:
+            merged_pks.update(self.primary_keys.pop(t, []))
+            self._duckdb.execute(f'DROP TABLE "{t}";')
+
+        self._duckdb.execute(f'ALTER TABLE "__merged_tmp" RENAME TO "{target}";')
+        self.primary_keys[target] = list(merged_pks)
+
     def export_db_tables(self):
         tables = self._duckdb.execute("SHOW TABLES;").fetchall()
 
-        if len(tables) != 1 and self.params.destination.table_name:
-            raise UserException("Parameter 'table_name' can be used only if the query returns single table.")
+        if len(tables) > 1 and self.params.destination.table_name:
+            self._merge_all_tables(tables)
+            tables = self._duckdb.execute("SHOW TABLES;").fetchall()
 
         for current_table in tables:
             tick = time.time()
