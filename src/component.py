@@ -34,13 +34,13 @@ class Component(ComponentBase):
         self.last_run = 0
 
     def run(self):
-        start_time = int(time.time())
+        self.stop_time = int(time.time())
         state = self.get_state_file() or {}
         self.columns_cache = state.get("columns_cache") or {}
         self.last_run = state.get("last_run", 0)
         self.download_data_to_tmp_tables()
         self.export_db_tables()
-        self.write_state_file({"last_run": start_time, "columns_cache": self.columns_cache})
+        self.write_state_file({"last_run": self.stop_time, "columns_cache": self.columns_cache})
 
     def init_duckdb(self) -> duckdb.DuckDBPyConnection:
         os.makedirs(DUCK_DB_DIR, exist_ok=True)
@@ -58,6 +58,7 @@ class Component(ComponentBase):
 
     def download_data_to_tmp_tables(self):
         start = self.last_run if self.params.source.start == "last_run" else self.params.source.start
+        stop = self.stop_time if self.params.source.stop == "now" else self.params.source.stop
 
         tag_names = self.get_tag_names()
 
@@ -69,6 +70,7 @@ class Component(ComponentBase):
             query = self.params.source.query.format(
                 bucket=self.params.source.bucket,
                 start=start,
+                stop=stop,
                 batch_size=self.params.source.batch_size,
                 offset=offset,
             )
@@ -246,9 +248,11 @@ class Component(ComponentBase):
     def query_preview(self):
         try:
             start = self.params.source.start if self.params.source.start != "last_run" else "0"
+            stop = int(time.time()) if self.params.source.stop == "now" else self.params.source.stop
             query = self.params.source.query.format(
                 bucket=self.params.source.bucket,
                 start=start,
+                stop=stop,
                 batch_size=self.params.source.batch_size,
                 offset=0,
             )
