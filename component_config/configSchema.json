@@ -19,6 +19,13 @@
       "type": "string",
       "title": "Organization",
       "propertyOrder": 3
+    },
+    "timeout": {
+      "type": "integer",
+      "title": "Request Timeout (ms)",
+      "description": "HTTP request timeout for the InfluxDB client, in milliseconds.",
+      "default": 10000,
+      "propertyOrder": 4
     }
   }
 }
