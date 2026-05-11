@@ -10,9 +10,7 @@ class LoadType(str, Enum):
 class Source(BaseModel):
     bucket: str = ""
     query: str = (
-        'from(bucket: "{bucket}")'
-        "|> range(start: {start}, stop: {stop})"
-        "|> limit(n: {batch_size}, offset: {offset})"
+        'from(bucket: "{bucket}")|> range(start: {start}, stop: {stop})|> limit(n: {batch_size}, offset: {offset})'
     )
     start: str = ""
     stop: str = "now"
@@ -40,3 +38,4 @@ class Configuration(BaseModel):
     debug: bool = False
     duckdb_max_memory_mb: int = 256
     test_mode: bool = False
+    timeout: int = 10_000

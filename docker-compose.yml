@@ -23,7 +23,7 @@ services:
       - /code/scripts/build_n_test.sh
 
   influxdb2:
-    image: influxdb:2
+    image: influxdb:2.7.11
     container_name: influxdb2
     ports:
       - "8086:8086"

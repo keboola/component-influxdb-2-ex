@@ -27,7 +27,9 @@ class Component(ComponentBase):
     def __init__(self):
         super().__init__()
         self.params = Configuration(**self.configuration.parameters)
-        self._influx = influxdb_client.InfluxDBClient(url=self.params.url, token=self.params.token, org=self.params.org)
+        self._influx = influxdb_client.InfluxDBClient(
+            url=self.params.url, token=self.params.token, org=self.params.org, timeout=self.params.timeout
+        )
         self._duckdb = self.init_duckdb()
         self.primary_keys = {}
         self.columns_cache = {}
