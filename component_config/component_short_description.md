@@ -1,1 +1,1 @@
-InfluxDB 2 is a time-series database.
+Extracts data from InfluxDB v2.
