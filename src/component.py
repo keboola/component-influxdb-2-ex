@@ -9,6 +9,7 @@ import duckdb
 import influxdb_client
 import pandas as pd
 import polars as pl
+import urllib3
 from influxdb_client.client.warnings import MissingPivotFunction
 from keboola.component.base import ComponentBase, sync_action
 from keboola.component.dao import BaseType, ColumnDefinition, SupportedDataTypes
@@ -21,6 +22,11 @@ from configuration import Configuration
 warnings.simplefilter("ignore", MissingPivotFunction)
 
 DUCK_DB_DIR = os.path.join(os.environ.get("TMPDIR", "/tmp"), "duckdb")
+
+# Bounded retry for InfluxDB queries whose HTTP request times out (transient server slowness).
+QUERY_TIMEOUT_RETRY_ATTEMPTS = 3
+QUERY_TIMEOUT_RETRY_INITIAL_DELAY_S = 2
+QUERY_TIMEOUT_RETRY_MAX_DELAY_S = 30
 
 
 class Component(ComponentBase):
@@ -58,6 +64,34 @@ class Component(ComponentBase):
 
         return conn
 
+    def _query_data_frame(self, query: str):
+        """
+        Run a Flux query and return the result exactly as the InfluxDB client does.
+
+        A momentarily slow or unresponsive InfluxDB server makes the HTTP request time out.
+        That is almost always transient, so a timed-out request is retried with exponential
+        backoff. If every attempt times out the job still fails, but as a UserException with
+        actionable guidance instead of an unhandled internal error.
+        """
+        delay = QUERY_TIMEOUT_RETRY_INITIAL_DELAY_S
+        for attempt in range(1, QUERY_TIMEOUT_RETRY_ATTEMPTS + 1):
+            try:
+                return self._influx.query_api().query_data_frame(query)
+            except urllib3.exceptions.TimeoutError as exc:
+                if attempt == QUERY_TIMEOUT_RETRY_ATTEMPTS:
+                    raise UserException(
+                        f"Could not reach the InfluxDB server in {QUERY_TIMEOUT_RETRY_ATTEMPTS} attempts "
+                        f"(configured request timeout: {self.params.timeout} ms): {exc}. "
+                        f"Increase the 'timeout' parameter, lower the 'batch_size' parameter, or check that "
+                        f"the InfluxDB server is reachable and not overloaded."
+                    ) from exc
+                logging.warning(
+                    f"InfluxDB query did not complete ({exc}), "
+                    f"retrying in {delay}s (attempt {attempt}/{QUERY_TIMEOUT_RETRY_ATTEMPTS})."
+                )
+                time.sleep(delay)
+                delay = min(delay * 2, QUERY_TIMEOUT_RETRY_MAX_DELAY_S)
+
     def download_data_to_tmp_tables(self):
         start = self.last_run if self.params.source.start == "last_run" else self.params.source.start
         stop = self.stop_time if self.params.source.stop == "now" else self.params.source.stop
@@ -77,7 +111,7 @@ class Component(ComponentBase):
                 offset=offset,
             )
             logging.debug(f"Running query: {query}")
-            res_tables = self._influx.query_api().query_data_frame(query)
+            res_tables = self._query_data_frame(query)
 
             if isinstance(res_tables, pd.DataFrame) and res_tables.empty:
                 return
@@ -132,7 +166,7 @@ class Component(ComponentBase):
         """
         run query to export schema of long table and filter tag columns
         """
-        res_helper = self._influx.query_api().query_data_frame(
+        res_helper = self._query_data_frame(
             'from(bucket: "{bucket}")|> range(start: 0)|> limit(n: 0)'.format(bucket=self.params.source.bucket)
         )
         if not isinstance(res_helper, list):
